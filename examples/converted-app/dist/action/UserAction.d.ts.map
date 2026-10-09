@@ -1,0 +1,1 @@
+{"version":3,"file":"UserAction.d.ts","sourceRoot":"","sources":["../../src/action/UserAction.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,WAAW,EAAE,MAAM,sBAAsB,CAAC;AACnD,OAAO,EAAE,IAAI,EAAE,MAAM,gBAAgB,CAAC;AAGtC,qBACa,UAAU;IAEI,OAAO,CAAC,WAAW;gBAAX,WAAW,EAAE,WAAW;IAGzD,KAAK,IAAI,MAAM;IAKf,IAAI,CAAC,EAAE,EAAE,MAAM,GAAG,IAAI;CAKvB"}

@@ -1,0 +1,23 @@
+{
+  "name": "@seasar2ts/core",
+  "version": "0.1.0",
+  "description": "Seasar2 / S2Dao regeneration runtime framework for TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "inversify": "^6.0.2",
+    "reflect-metadata": "^0.2.2",
+    "fast-xml-parser": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  },
+  "license": "Apache-2.0"
+}

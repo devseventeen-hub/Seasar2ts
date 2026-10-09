@@ -1,0 +1,19 @@
+{
+  "name": "converted-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "ts-node src/main.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@seasar2ts/core": "*",
+    "inversify": "^6.0.2",
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}

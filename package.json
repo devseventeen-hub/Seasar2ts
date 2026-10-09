@@ -1,0 +1,25 @@
+{
+  "name": "seasar2ts-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Seasar2 / S2Dao regeneration framework and Java to TypeScript converter",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "keywords": [
+    "seasar2",
+    "s2dao",
+    "typescript",
+    "inversify",
+    "di",
+    "aop"
+  ],
+  "author": "",
+  "license": "Apache-2.0"
+}
