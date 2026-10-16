@@ -12,4 +12,8 @@ public interface UserDao {
 
     @Sql("user/update.sql")
     int update(User user);
+
+    // SQL-less convention-based auto query methods (2nd Stage)
+    User selectById(int id);
+    List<User> selectByExample(User condition);
 }

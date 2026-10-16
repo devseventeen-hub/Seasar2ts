@@ -6,7 +6,7 @@ Seasar2ts is a framework and a conversion tool designed to bring the core archit
 Seasar2ts aims to replicate the core features of Seasar2 in TypeScript:
 - **Convention over Configuration**: A rule-based approach to reduce boilerplate.
 - **Lightweight DI**: Powered by InversifyJS with automatic binding based on naming conventions.
-- **SQL-first DAO (S2Dao)**: Support for external `.sql` files, automatic parameter binding, and `Bean` mapping.
+- **SQL-first DAO (S2Dao)**: Support for external `.sql` files, `Bean` mapping, and automatic query generation (e.g., `selectById`).
 - **Declarative AOP**: Proxy-based interceptors for transaction management (`TxInterceptor`) and logging.
 - **dicon Support**: Parsing `.dicon` files for configuration and aspect application.
 

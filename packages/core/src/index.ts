@@ -3,16 +3,19 @@ import "reflect-metadata";
 // DI & Container
 export * from "./container/container";
 export * from "./container/autoBind";
+export * from "./container/hierarchicalContainer";
 
 // AOP
 export * from "./aop/interceptor";
 export * from "./aop/txInterceptor";
 export * from "./aop/logInterceptor";
+export * from "./aop/pointcut";
 
 // S2Dao 再生
 export * from "./dao/database";
 export * from "./dao/loadSql";
 export * from "./dao/mapping";
+export * from "./dao/autoSql";
 
 // dicon
 export * from "./dicon/diconParser";

@@ -102,11 +102,12 @@ export class SeasarTsGenerator {
 
   /**
    * S2Dao (Interface / Class) の TypeScript 具象クラスコード生成
+   * SQL-first と 自動クエリ生成 (AutoSqlGenerator) のハイブリッドコードを出力
    */
   generateDaoCode(ir: SeasarClassIR): string {
     const lines: string[] = [];
     lines.push(`import { injectable, inject } from "inversify";`);
-    lines.push(`import { Database, loadSql, mapRowToBean, mapRowsToBeans } from "@seasar2ts/core";`);
+    lines.push(`import { Database, executeAutoOrFileQuery } from "@seasar2ts/core";`);
 
     // 参照しているカスタム型（Entity等）を収集してインポート
     const referencedTypes = new Set<string>();
@@ -140,36 +141,25 @@ export class SeasarTsGenerator {
         .map(p => `${p.name}: ${mapJavaTypeToTs(p.type)}`)
         .join(", ");
 
-      const sqlPath = method.sqlFile || `${ir.className.toLowerCase().replace(/dao$/, "")}/${method.name}.sql`;
+      const sqlPath = method.sqlFile
+        ? `"${method.sqlFile}"`
+        : `"${ir.className.toLowerCase().replace(/dao$/, "")}/${method.name}.sql"`;
+
+      const entityArg = baseType !== "any" && baseType !== "string" && baseType !== "number" && baseType !== "void"
+        ? baseType
+        : "undefined";
+
+      const paramArgsList = method.parameters.map(p => p.name).join(", ");
 
       lines.push(`  async ${method.name}(${paramsDecl}): Promise<${tsReturnType}> {`);
-      lines.push(`    const sql = loadSql("${sqlPath}");`);
-
-      const paramArg = method.parameters.length === 1
-        ? method.parameters[0].name
-        : method.parameters.length > 1
-        ? `{ ${method.parameters.map(p => p.name).join(", ")} }`
-        : `undefined`;
-
-      if (tsReturnType === "number" || tsReturnType === "void") {
-        lines.push(`    const count = await this.db.execute(sql, ${paramArg});`);
-        if (tsReturnType === "number") lines.push(`    return count;`);
-      } else if (isList) {
-        lines.push(`    const rows = await this.db.queryList(sql, ${paramArg});`);
-        if (baseType !== "any" && baseType !== "string" && baseType !== "number") {
-          lines.push(`    return mapRowsToBeans(rows, ${baseType} as any);`);
-        } else {
-          lines.push(`    return rows as any;`);
-        }
-      } else {
-        lines.push(`    const row = await this.db.queryOne(sql, ${paramArg});`);
-        if (baseType !== "any" && baseType !== "string" && baseType !== "number") {
-          lines.push(`    return mapRowToBean(row, ${baseType} as any);`);
-        } else {
-          lines.push(`    return row as any;`);
-        }
-      }
-
+      lines.push(`    return await executeAutoOrFileQuery({`);
+      lines.push(`      db: this.db,`);
+      lines.push(`      daoName: "${ir.className}",`);
+      lines.push(`      methodName: "${method.name}",`);
+      lines.push(`      sqlRelativePath: ${sqlPath},`);
+      lines.push(`      args: [${paramArgsList}],`);
+      lines.push(`      entityClass: ${entityArg} as any`);
+      lines.push(`    });`);
       lines.push(`  }`);
       lines.push(``);
     }
@@ -265,40 +255,47 @@ export class SeasarTsGenerator {
 
   /**
    * アプリケーション全体のコンテナ初期化スクリプト (container.ts) を生成する
+   * S2HierarchicalContainer (階層コンテナ) および ポイントカット AOP をサポート
    */
   generateContainerBootstrap(): string {
     return `import "reflect-metadata";
 import * as path from "path";
 import {
-  createContainer,
+  S2HierarchicalContainer,
   autoBind,
   applyInterceptors,
+  applyPointcutAdvisors,
+  PointcutAdvisor,
   TxInterceptor,
   LogInterceptor,
   MockDatabase,
   Database
 } from "@seasar2ts/core";
 
-export function initContainer(dbInstance?: Database) {
-  const container = createContainer();
+export function initContainer(dbInstance?: Database): S2HierarchicalContainer {
+  // 1. Root コンテナの生成 (共通リソース・DAO層)
+  const rootContainer = new S2HierarchicalContainer("root");
 
-  // 1. データベースのバインド
   const db = dbInstance || new MockDatabase();
-  container.bind<Database>("Database").toConstantValue(db);
+  rootContainer.bind<Database>("Database").toConstantValue(db);
 
-  // 2. Interceptor の登録
+  // 2. 共通 Interceptor の登録
   const txInterceptor = new TxInterceptor(db);
   const logInterceptor = new LogInterceptor();
-  container.bind("TxInterceptor").toConstantValue(txInterceptor);
-  container.bind("LogInterceptor").toConstantValue(logInterceptor);
+  rootContainer.bind("TxInterceptor").toConstantValue(txInterceptor);
+  rootContainer.bind("LogInterceptor").toConstantValue(logInterceptor);
 
-  // 3. 命名規約による自動バインド (src/action, src/logic, src/dao)
   const baseDir = __dirname;
-  autoBind(container, { baseDir: path.join(baseDir, "dao") });
-  autoBind(container, { baseDir: path.join(baseDir, "logic") });
-  autoBind(container, { baseDir: path.join(baseDir, "action") });
 
-  return container;
+  // Root コンテナに DAO を自動登録
+  rootContainer.autoBind({ baseDir: path.join(baseDir, "dao") });
+
+  // 3. Web 用子コンテナの生成 (Action / Logic 層)
+  const webContainer = rootContainer.createChild("web");
+  webContainer.autoBind({ baseDir: path.join(baseDir, "logic") });
+  webContainer.autoBind({ baseDir: path.join(baseDir, "action") });
+
+  return rootContainer;
 }
 `;
   }

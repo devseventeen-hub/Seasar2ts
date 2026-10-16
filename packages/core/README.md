@@ -8,22 +8,26 @@ The `packages/core` module provides the foundational infrastructure for the Seas
 Provides a Proxy-based AOP implementation similar to Seasar2's `MethodInterceptor`.
 - **Interceptors**: Define cross-cutting concerns (e.g., logging, transaction management).
 - **Proxy Generation**: Automatically wraps target objects with a chain of interceptors.
+- **Pointcut Expressions**: Supports method-pattern matching (e.g., `UserService.*`) for granular interceptor application.
 - **Location**: `packages/core/src/aop/`
 
 ### 2. Dependency Injection (DI)
 Provides a standard DI container based on `inversify`.
 - **Container**: A Seasar2-style container that supports Singleton scope by default.
 - **Auto-binding**: Simplifies the wiring of components.
+- **Hierarchical Containers**: Supports nested container structures for managing different contexts (e.g., `Web` vs. `Batch`).
 - **Location**: `packages/core/src/container/`
 
 ### 3. DAO & Mapping
-Implements automatic mapping between database result sets and TypeScript objects.
-- **Bean Mapping**: Automatically maps `snake_case` database columns to `camelCase` properties.
-- **Prefix Handling**: Supports stripping prefixes (e.g., `user_name` $\rightarrow$ `name`) to simplify entity definitions.
+Provides the runtime layer for S2Dao-style SQL execution and bean mapping.
+- **Bean Mapping**: Converts `snake_case` columns to `camelCase` properties and supports prefix stripping.
+- **SQL Runtime**: Loads external `.sql` files, binds parameters, and maps result sets to typed objects.
+- **Role Separation**: Query generation (e.g., `selectById`) is handled by the `converter`; the core module focuses solely on execution and mapping.
 - **Location**: `packages/core/src/dao/`
 
 ### 4. Dicon Parsing
 Provides utilities to parse `.dicon` files, enabling the migration of Seasar2 configuration into the TypeScript environment.
+- **Nested Container Mapping**: Supports mapping the hierarchical container structures defined in `.dicon` files.
 - **Location**: `packages/core/src/dicon/`
 
 ## Architecture Overview

@@ -38,20 +38,22 @@ require("reflect-metadata");
 const path = __importStar(require("path"));
 const core_1 = require("@seasar2ts/core");
 function initContainer(dbInstance) {
-    const container = (0, core_1.createContainer)();
-    // 1. データベースのバインド
+    // 1. Root コンテナの生成 (共通リソース・DAO層)
+    const rootContainer = new core_1.S2HierarchicalContainer("root");
     const db = dbInstance || new core_1.MockDatabase();
-    container.bind("Database").toConstantValue(db);
-    // 2. Interceptor の登録
+    rootContainer.bind("Database").toConstantValue(db);
+    // 2. 共通 Interceptor の登録
     const txInterceptor = new core_1.TxInterceptor(db);
     const logInterceptor = new core_1.LogInterceptor();
-    container.bind("TxInterceptor").toConstantValue(txInterceptor);
-    container.bind("LogInterceptor").toConstantValue(logInterceptor);
-    // 3. 命名規約による自動バインド (src/action, src/logic, src/dao)
+    rootContainer.bind("TxInterceptor").toConstantValue(txInterceptor);
+    rootContainer.bind("LogInterceptor").toConstantValue(logInterceptor);
     const baseDir = __dirname;
-    (0, core_1.autoBind)(container, { baseDir: path.join(baseDir, "dao") });
-    (0, core_1.autoBind)(container, { baseDir: path.join(baseDir, "logic") });
-    (0, core_1.autoBind)(container, { baseDir: path.join(baseDir, "action") });
-    return container;
+    // Root コンテナに DAO を自動登録
+    rootContainer.autoBind({ baseDir: path.join(baseDir, "dao") });
+    // 3. Web 用子コンテナの生成 (Action / Logic 層)
+    const webContainer = rootContainer.createChild("web");
+    webContainer.autoBind({ baseDir: path.join(baseDir, "logic") });
+    webContainer.autoBind({ baseDir: path.join(baseDir, "action") });
+    return rootContainer;
 }
 //# sourceMappingURL=container.js.map

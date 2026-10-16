@@ -56,10 +56,26 @@ describe("Seasar2ts Converter (Java -> TS)", () => {
     expect(tsCode).toContain("@injectable()");
     expect(tsCode).toContain("export class UserDao {");
     expect(tsCode).toContain("@inject(\"Database\") private db: Database");
-    expect(tsCode).toContain("loadSql(\"user/find.sql\")");
-    expect(tsCode).toContain("this.db.queryOne(sql, id)");
-    expect(tsCode).toContain("mapRowToBean(row, User as any)");
-    expect(tsCode).toContain("this.db.execute(sql, user)");
+    expect(tsCode).toContain("executeAutoOrFileQuery");
+    expect(tsCode).toContain("sqlRelativePath: \"user/find.sql\"");
+    expect(tsCode).toContain("sqlRelativePath: \"user/update.sql\"");
+  });
+
+  it("should generate auto-query code when no @Sql is specified", () => {
+    const javaSource = `
+    package com.example.dao;
+
+    public interface ItemDao {
+        Item selectById(int id);
+        List<Item> selectByExample(Item condition);
+    }
+    `;
+
+    const ir = parser.parseSource(javaSource, "ItemDao.java");
+    const tsCode = generator.generateDaoCode(ir);
+    expect(tsCode).toContain("export class ItemDao {");
+    expect(tsCode).toContain("methodName: \"selectById\"");
+    expect(tsCode).toContain("methodName: \"selectByExample\"");
   });
 
   it("should parse Logic with @Binding and convert to Constructor Injection", () => {

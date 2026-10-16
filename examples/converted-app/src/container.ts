@@ -1,33 +1,39 @@
 import "reflect-metadata";
 import * as path from "path";
 import {
-  createContainer,
+  S2HierarchicalContainer,
   autoBind,
   applyInterceptors,
+  applyPointcutAdvisors,
+  PointcutAdvisor,
   TxInterceptor,
   LogInterceptor,
   MockDatabase,
   Database
 } from "@seasar2ts/core";
 
-export function initContainer(dbInstance?: Database) {
-  const container = createContainer();
+export function initContainer(dbInstance?: Database): S2HierarchicalContainer {
+  // 1. Root コンテナの生成 (共通リソース・DAO層)
+  const rootContainer = new S2HierarchicalContainer("root");
 
-  // 1. データベースのバインド
   const db = dbInstance || new MockDatabase();
-  container.bind<Database>("Database").toConstantValue(db);
+  rootContainer.bind<Database>("Database").toConstantValue(db);
 
-  // 2. Interceptor の登録
+  // 2. 共通 Interceptor の登録
   const txInterceptor = new TxInterceptor(db);
   const logInterceptor = new LogInterceptor();
-  container.bind("TxInterceptor").toConstantValue(txInterceptor);
-  container.bind("LogInterceptor").toConstantValue(logInterceptor);
+  rootContainer.bind("TxInterceptor").toConstantValue(txInterceptor);
+  rootContainer.bind("LogInterceptor").toConstantValue(logInterceptor);
 
-  // 3. 命名規約による自動バインド (src/action, src/logic, src/dao)
   const baseDir = __dirname;
-  autoBind(container, { baseDir: path.join(baseDir, "dao") });
-  autoBind(container, { baseDir: path.join(baseDir, "logic") });
-  autoBind(container, { baseDir: path.join(baseDir, "action") });
 
-  return container;
+  // Root コンテナに DAO を自動登録
+  rootContainer.autoBind({ baseDir: path.join(baseDir, "dao") });
+
+  // 3. Web 用子コンテナの生成 (Action / Logic 層)
+  const webContainer = rootContainer.createChild("web");
+  webContainer.autoBind({ baseDir: path.join(baseDir, "logic") });
+  webContainer.autoBind({ baseDir: path.join(baseDir, "action") });
+
+  return rootContainer;
 }

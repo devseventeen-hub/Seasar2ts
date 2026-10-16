@@ -6,7 +6,7 @@ This document describes how to use the `Seasar2ts Converter` to migrate your exi
 
 Before using the converter, ensure your environment meets the following requirements:
 - **Node.js**: Version 20.x or higher (LTS recommended).
-- **Java Runtime**: JDK 1.8 or higher (required for the `JavaParser` component).
+- **Java Runtime**: JDK 1.8 or higher (required for the `JavaParser` component). JDK 17 or later  recommended.
 - **Source Assets**: A collection of `.java`, `.dicon`, and `.sql` files from your Seasar2 project.
 
 ## Basic Workflow
@@ -50,3 +50,5 @@ To convert a simple "User Management" module:
 ## Troubleshooting
 - **JavaParser Errors**: Ensure `JAVA_HOME` is correctly set if the parser fails to initialize.
 - **Mapping Issues**: If a specific SQL query is not mapped correctly, check the `.sql` file naming convention to ensure it matches the expected `S2Dao` patterns.
+- **dicon Parsing Errors**: Ensure the `.dicon` file follows the standard Seasar2 nested container XML structure for correct hierarchy detection.
+- **Conversion Logic Errors**: If AOP or DI rules are not correctly mapped, verify the source configuration in the `.dicon` file.

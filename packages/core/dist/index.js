@@ -19,14 +19,17 @@ require("reflect-metadata");
 // DI & Container
 __exportStar(require("./container/container"), exports);
 __exportStar(require("./container/autoBind"), exports);
+__exportStar(require("./container/hierarchicalContainer"), exports);
 // AOP
 __exportStar(require("./aop/interceptor"), exports);
 __exportStar(require("./aop/txInterceptor"), exports);
 __exportStar(require("./aop/logInterceptor"), exports);
+__exportStar(require("./aop/pointcut"), exports);
 // S2Dao 再生
 __exportStar(require("./dao/database"), exports);
 __exportStar(require("./dao/loadSql"), exports);
 __exportStar(require("./dao/mapping"), exports);
+__exportStar(require("./dao/autoSql"), exports);
 // dicon
 __exportStar(require("./dicon/diconParser"), exports);
 // Inversify 再エクスポート (利用側の利便性のため)

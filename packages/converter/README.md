@@ -9,10 +9,11 @@ The converter is designed to automate the transition from a Java-based Seasar2 e
 - **Java AST Parsing**: Utilizes `JavaParser` to analyze Java source code and extract structural metadata.
 - **Intermediate Representation (IR)**: Converts Java source and configuration files into a structured JSON format representing the Seasar2 architecture.
 - **TypeScript Generation**: Uses `ts-morph` to generate production-ready TypeScript code from the IR.
-- **Multi-asset Support**:
-  - **Java Source**: Converts `Action`, `Logic`, and `Dao` classes.
-  - **dicon Files**: Parses XML configuration to set up the TypeScript container.
-  - **SQL Files**: Maps `.sql` files to the `S2Dao` implementation in TypeScript.
+
+## Multi-asset Support
+- **Java Source**: Converts `Action`, `Logic`, and `Dao` classes while preserving Seasar2 conventions.
+- **dicon**: Translates nested containers and pointcut expressions into TypeScript equivalents.
+- **SQL**: Handles manual SQL files and generates TypeScript DAO methods for automatic queries (e.g., `selectById`).
 
 ## Pipeline
 1. **Input**: `.java`, `.dicon`, `.sql`

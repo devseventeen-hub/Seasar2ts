@@ -23,19 +23,54 @@ let UserDao = class UserDao {
         this.db = db;
     }
     async find(id) {
-        const sql = (0, core_1.loadSql)("user/find.sql");
-        const row = await this.db.queryOne(sql, id);
-        return (0, core_1.mapRowToBean)(row, User_1.User);
+        return await (0, core_1.executeAutoOrFileQuery)({
+            db: this.db,
+            daoName: "UserDao",
+            methodName: "find",
+            sqlRelativePath: "user/find.sql",
+            args: [id],
+            entityClass: User_1.User
+        });
     }
     async findAll() {
-        const sql = (0, core_1.loadSql)("user/findAll.sql");
-        const rows = await this.db.queryList(sql, undefined);
-        return (0, core_1.mapRowsToBeans)(rows, User_1.User);
+        return await (0, core_1.executeAutoOrFileQuery)({
+            db: this.db,
+            daoName: "UserDao",
+            methodName: "findAll",
+            sqlRelativePath: "user/findAll.sql",
+            args: [],
+            entityClass: User_1.User
+        });
     }
     async update(user) {
-        const sql = (0, core_1.loadSql)("user/update.sql");
-        const count = await this.db.execute(sql, user);
-        return count;
+        return await (0, core_1.executeAutoOrFileQuery)({
+            db: this.db,
+            daoName: "UserDao",
+            methodName: "update",
+            sqlRelativePath: "user/update.sql",
+            args: [user],
+            entityClass: undefined
+        });
+    }
+    async selectById(id) {
+        return await (0, core_1.executeAutoOrFileQuery)({
+            db: this.db,
+            daoName: "UserDao",
+            methodName: "selectById",
+            sqlRelativePath: "user/selectById.sql",
+            args: [id],
+            entityClass: User_1.User
+        });
+    }
+    async selectByExample(condition) {
+        return await (0, core_1.executeAutoOrFileQuery)({
+            db: this.db,
+            daoName: "UserDao",
+            methodName: "selectByExample",
+            sqlRelativePath: "user/selectByExample.sql",
+            args: [condition],
+            entityClass: User_1.User
+        });
     }
 };
 exports.UserDao = UserDao;

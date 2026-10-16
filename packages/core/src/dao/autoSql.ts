@@ -1,0 +1,227 @@
+import { Database } from "./database";
+import { loadSql } from "./loadSql";
+import { mapRowToBean, mapRowsToBeans, snakeToCamel } from "./mapping";
+import * as fs from "fs";
+import * as path from "path";
+
+/**
+ * キャメルケースの文字列をスネークケースに変換する
+ */
+export function camelToSnake(str: string): string {
+  return str
+    .replace(/([A-Z])/g, "_$1")
+    .toLowerCase()
+    .replace(/^_/, "");
+}
+
+/**
+ * Dao クラス名または Entity クラス名からテーブル名を推定する
+ * 例: UserDao -> users, ItemCategoryDao -> item_categories
+ */
+export function inferTableName(className: string): string {
+  const baseName = className.replace(/(?:Dao|Repository|Entity|Bean)$/, "");
+  const snake = camelToSnake(baseName);
+
+  // 単純な複数形化 (s, x, z, ch, sh -> es, y -> ies, その他 -> s)
+  if (snake.endsWith("s") || snake.endsWith("x") || snake.endsWith("ch") || snake.endsWith("sh")) {
+    return `${snake}es`;
+  }
+  if (snake.endsWith("y") && !/[aeiou]y$/.test(snake)) {
+    return `${snake.slice(0, -1)}ies`;
+  }
+  return `${snake}s`;
+}
+
+export interface GeneratedSql {
+  sql: string;
+  params: any[];
+  type: "selectOne" | "selectList" | "execute";
+}
+
+/**
+ * S2Dao 規約ベースの自動 SQL ジェネレータ
+ */
+export class AutoSqlGenerator {
+  /**
+   * メソッド名と引数から自動生成 SQL を構築する
+   * @param tableName 対象テーブル名
+   * @param methodName メソッド名 (selectById, selectByExample, insert, etc.)
+   * @param args メソッド実引数配列
+   */
+  static generate(tableName: string, methodName: string, args: any[] = []): GeneratedSql {
+    // 1. selectById / findById
+    if (/^(?:select|find)ById$/i.test(methodName)) {
+      const id = args[0];
+      return {
+        sql: `SELECT * FROM ${tableName} WHERE id = ?;`,
+        params: [id],
+        type: "selectOne"
+      };
+    }
+
+    // 2. selectAll / findAll
+    if (/^(?:select|find)All$/i.test(methodName)) {
+      return {
+        sql: `SELECT * FROM ${tableName};`,
+        params: [],
+        type: "selectList"
+      };
+    }
+
+    // 3. selectByExample / selectBy / findByExample
+    if (/^(?:select|find)By(?:Example)?$/i.test(methodName)) {
+      const condition = args[0] || {};
+      const whereClauses: string[] = [];
+      const params: any[] = [];
+
+      for (const [key, val] of Object.entries(condition)) {
+        if (val !== undefined && val !== null) {
+          const colName = camelToSnake(key);
+          whereClauses.push(`${colName} = ?`);
+          params.push(val);
+        }
+      }
+
+      const wherePart = whereClauses.length > 0 ? ` WHERE ${whereClauses.join(" AND ")}` : "";
+      return {
+        sql: `SELECT * FROM ${tableName}${wherePart};`,
+        params,
+        type: "selectList"
+      };
+    }
+
+    // 4. insert
+    if (/^insert/i.test(methodName)) {
+      const entity = args[0] || {};
+      const cols: string[] = [];
+      const placeholders: string[] = [];
+      const params: any[] = [];
+
+      for (const [key, val] of Object.entries(entity)) {
+        if (val !== undefined) {
+          cols.push(camelToSnake(key));
+          placeholders.push("?");
+          params.push(val);
+        }
+      }
+
+      return {
+        sql: `INSERT INTO ${tableName} (${cols.join(", ")}) VALUES (${placeholders.join(", ")});`,
+        params,
+        type: "execute"
+      };
+    }
+
+    // 5. update
+    if (/^update/i.test(methodName)) {
+      const entity = args[0] || {};
+      const setClauses: string[] = [];
+      const params: any[] = [];
+      let idVal: any = undefined;
+
+      for (const [key, val] of Object.entries(entity)) {
+        if (key.toLowerCase() === "id") {
+          idVal = val;
+        } else if (val !== undefined) {
+          setClauses.push(`${camelToSnake(key)} = ?`);
+          params.push(val);
+        }
+      }
+
+      params.push(idVal);
+      return {
+        sql: `UPDATE ${tableName} SET ${setClauses.join(", ")} WHERE id = ?;`,
+        params,
+        type: "execute"
+      };
+    }
+
+    // 6. deleteById / delete
+    if (/^delete(?:ById)?$/i.test(methodName)) {
+      const arg = args[0];
+      const id = typeof arg === "object" && arg !== null ? (arg as any).id : arg;
+      return {
+        sql: `DELETE FROM ${tableName} WHERE id = ?;`,
+        params: [id],
+        type: "execute"
+      };
+    }
+
+    // フォールバック: 単純クエリ
+    return {
+      sql: `SELECT * FROM ${tableName};`,
+      params: [],
+      type: "selectList"
+    };
+  }
+}
+
+export interface AutoOrFileQueryOptions<T = any> {
+  db: Database;
+  daoName: string;
+  methodName: string;
+  sqlRelativePath?: string;
+  args: any[];
+  entityClass?: new () => T;
+}
+
+/**
+ * SQL-first と自動クエリ生成のハイブリッド実行ヘルパー
+ * SQLファイルが存在すればそれを実行し、存在しなければメソッド名規約からSQLを自動生成する
+ */
+export async function executeAutoOrFileQuery<T = any>(
+  options: AutoOrFileQueryOptions<T>
+): Promise<any> {
+  const { db, daoName, methodName, sqlRelativePath, args, entityClass } = options;
+
+  let sql: string | undefined;
+  let params: any[] = args;
+  let queryType: "selectOne" | "selectList" | "execute" = "selectOne";
+
+  // 1. SQL ファイルが存在するか確認 (SQL-first 優先)
+  if (sqlRelativePath) {
+    try {
+      sql = loadSql(sqlRelativePath);
+      // パラメータ置換 (シンプルな配列渡しまたは単一値)
+      params = args.length === 1 ? args[0] : args;
+    } catch {
+      // 見つからなければ自動生成へフォールバック
+      sql = undefined;
+    }
+  }
+
+  // 2. SQL ファイルが無ければ規約から自動生成
+  if (!sql) {
+    const tableName = inferTableName(daoName);
+    const gen = AutoSqlGenerator.generate(tableName, methodName, args);
+    sql = gen.sql;
+    params = gen.params;
+    queryType = gen.type;
+  } else {
+    // SQL ファイルからの場合、戻り値の型判定
+    if (/^(?:update|insert|delete)/i.test(methodName)) {
+      queryType = "execute";
+    } else if (/(?:All|List)$/i.test(methodName)) {
+      queryType = "selectList";
+    } else {
+      queryType = "selectOne";
+    }
+  }
+
+  // 3. DB 実行と Bean マッピング
+  if (queryType === "execute") {
+    return await db.execute(sql, params);
+  } else if (queryType === "selectList") {
+    const rows = await db.queryList(sql, params);
+    if (entityClass) {
+      return mapRowsToBeans(rows, entityClass);
+    }
+    return rows;
+  } else {
+    const row = await db.queryOne(sql, params);
+    if (entityClass && row) {
+      return mapRowToBean(row, entityClass);
+    }
+    return row;
+  }
+}

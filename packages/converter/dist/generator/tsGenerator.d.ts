@@ -18,6 +18,7 @@ export declare class SeasarTsGenerator {
     generateEntityCode(ir: SeasarClassIR): string;
     /**
      * S2Dao (Interface / Class) の TypeScript 具象クラスコード生成
+     * SQL-first と 自動クエリ生成 (AutoSqlGenerator) のハイブリッドコードを出力
      */
     generateDaoCode(ir: SeasarClassIR): string;
     /**
@@ -26,6 +27,7 @@ export declare class SeasarTsGenerator {
     generateServiceCode(ir: SeasarClassIR): string;
     /**
      * アプリケーション全体のコンテナ初期化スクリプト (container.ts) を生成する
+     * S2HierarchicalContainer (階層コンテナ) および ポイントカット AOP をサポート
      */
     generateContainerBootstrap(): string;
 }

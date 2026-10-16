@@ -20,7 +20,7 @@ Specifically, Seasar2's features have been optimized and adapted for TypeScript 
 
 ## 5. Naming Conventions and Auto-registration
 - Seasar2: Auto-registration based on package structure (e.g., `com.example.action`). 
-- ßSeasar2ts: It maps to a TypeScript directory structure (such as `src/action/`) and employs a mechanism that automatically registers class names as tokens using the `autoBind` function.
+- Seasar2ts: It maps to a TypeScript directory structure (such as `src/action/`) and employs a mechanism that automatically registers class names as tokens using the `autoBind` function.
 
 Summary
 Seasar2ts is not merely a port; it is designed as a framework that **"reconstructs the spirit of Seasar2 (lightweight, automation, and SQL-first) within the TypeScript ecosystem."**
