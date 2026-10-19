@@ -52,6 +52,9 @@ async function main() {
         { id: 1, user_name: "Seasar Developer", user_email: "dev@seasar.org", created_at: new Date() },
         { id: 2, user_name: "TypeScript Fan", user_email: "ts@example.com", created_at: new Date() }
     ];
+    db.mockData["WHERE name = ?"] = [
+        { id: 1, user_name: "Seasar Developer", user_email: "dev@seasar.org", created_at: new Date() }
+    ];
     // 3. コンテナ初期化 (S2HierarchicalContainer: root と web 子コンテナ)
     console.log("\n[1] Initializing S2HierarchicalContainer (Root & Web Child)...");
     const rootContainer = (0, container_1.initContainer)(db);
