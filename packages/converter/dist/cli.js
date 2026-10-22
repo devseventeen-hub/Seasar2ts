@@ -40,6 +40,7 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const javaParser_1 = require("./parser/javaParser");
 const tsGenerator_1 = require("./generator/tsGenerator");
+const core_1 = require("@seasar2ts/core");
 const program = new commander_1.Command();
 program
     .name("seasar2ts")
@@ -114,8 +115,23 @@ function runConversion(inputDir, outputDir, jarPath) {
         fs.copyFileSync(sFile, destSql);
         console.log(`  ✔ Copied SQL: ${path.relative(resolvedOutput, destSql)}`);
     }
-    // 3. container.ts の生成
-    const containerCode = generator.generateContainerBootstrap();
+    // 3. dicon からの DataSource 設定抽出と container.ts の生成
+    let dbConfig;
+    for (const dFile of diconFiles) {
+        try {
+            const diconDef = (0, core_1.parseDiconFile)(dFile);
+            const ds = (0, core_1.extractDataSourceConfig)(diconDef);
+            if (ds && ds.dbType !== "unknown") {
+                dbConfig = ds;
+                console.log(`  ✔ Detected DataSource in ${path.basename(dFile)}: ${ds.dbType} (${ds.url || ds.driverClassName || ""})`);
+                break;
+            }
+        }
+        catch {
+            // ignore parse error and continue
+        }
+    }
+    const containerCode = generator.generateContainerBootstrap({ dbConfig });
     fs.writeFileSync(path.join(srcDir, "container.ts"), containerCode, "utf-8");
     console.log(`  ✔ Generated: src/container.ts`);
     console.log(`[Seasar2ts] Conversion completed successfully! 🎉`);

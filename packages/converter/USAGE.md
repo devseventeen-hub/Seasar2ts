@@ -52,3 +52,5 @@ To convert a simple "User Management" module:
 - **Mapping Issues**: If a specific SQL query is not mapped correctly, check the `.sql` file naming convention to ensure it matches the expected `S2Dao` patterns.
 - **dicon Parsing Errors**: Ensure the `.dicon` file follows the standard Seasar2 nested container XML structure for correct hierarchy detection.
 - **Conversion Logic Errors**: If AOP or DI rules are not correctly mapped, verify the source configuration in the `.dicon` file.
+- **JDBC Configuration Analysis Errors**: Ensure that `jdbc.dicon` contains the required properties (`driverClassName`, `url`, `user`, `password`) and that the file path is correctly specified.
+- **Dialect Mismatch**: If the generated SQL uses incorrect placeholder formats (e.g., `?` instead of `$1, $2...` for PostgreSQL), verify that the correct `DbDialect` is being identified from the JDBC URL or configuration.

@@ -106,4 +106,37 @@ describe("Seasar2ts Converter (Java -> TS)", () => {
     expect(tsCode).toContain("export class UserService {");
     expect(tsCode).toContain("@inject(\"UserDao\") private userDao: UserDao");
   });
+
+  it("should generate container bootstrap with PostgresDriver when configured", () => {
+    const bootstrap = generator.generateContainerBootstrap({
+      dbConfig: {
+        dbType: "postgresql",
+        host: "pg.example.com",
+        port: 5432,
+        database: "mydb",
+        user: "pguser",
+        password: "pgpassword"
+      }
+    });
+
+    expect(bootstrap).toContain("PostgresDriver");
+    expect(bootstrap).toContain("new PostgresDriver({");
+    expect(bootstrap).toContain("pg.example.com");
+    expect(bootstrap).toContain("mydb");
+    expect(bootstrap).toContain("pguser");
+    expect(bootstrap).toContain("rootContainer.bind<Database>(\"Database\").toConstantValue(db);");
+  });
+
+  it("should generate container bootstrap with SQLiteDriver when configured", () => {
+    const bootstrap = generator.generateContainerBootstrap({
+      dbConfig: {
+        dbType: "sqlite",
+        database: "sample.db"
+      }
+    });
+
+    expect(bootstrap).toContain("SQLiteDriver");
+    expect(bootstrap).toContain("new SQLiteDriver({");
+    expect(bootstrap).toContain("sample.db");
+  });
 });

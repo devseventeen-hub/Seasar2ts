@@ -1,16 +1,21 @@
 "use strict";
-/**
- * データベース接続およびトランザクション境界の抽象インターフェース
- */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MockDatabase = void 0;
+const dialect_1 = require("./dialect");
 /**
  * テスト・検証用のインメモリ MockDatabase 実装
  */
 class MockDatabase {
+    dialect;
     inTransaction = false;
     queryLogs = [];
     mockData = {};
+    constructor(dialect = dialect_1.defaultDialect) {
+        this.dialect = dialect;
+    }
+    async begin() {
+        await this.beginTransaction();
+    }
     async beginTransaction() {
         this.inTransaction = true;
         this.queryLogs.push({ sql: "BEGIN TRANSACTION" });
@@ -31,6 +36,9 @@ class MockDatabase {
         this.queryLogs.push({ sql, params });
         const list = await this.queryList(sql, params);
         return list.length > 0 ? list[0] : null;
+    }
+    async queryMany(sql, params) {
+        return this.queryList(sql, params);
     }
     async queryList(sql, params) {
         this.queryLogs.push({ sql, params });

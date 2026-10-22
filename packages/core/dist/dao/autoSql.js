@@ -4,6 +4,7 @@ exports.AutoSqlGenerator = void 0;
 exports.camelToSnake = camelToSnake;
 exports.inferTableName = inferTableName;
 exports.executeAutoOrFileQuery = executeAutoOrFileQuery;
+const dialect_1 = require("./dialect");
 const loadSql_1 = require("./loadSql");
 const mapping_1 = require("./mapping");
 /**
@@ -32,7 +33,7 @@ function inferTableName(className) {
     return `${snake}s`;
 }
 /**
- * S2Dao 規約ベースの自動 SQL ジェネレータ
+ * S2Dao 規約ベースの自動 SQL ジェネレータ (DB 方言対応)
  */
 class AutoSqlGenerator {
     /**
@@ -40,13 +41,15 @@ class AutoSqlGenerator {
      * @param tableName 対象テーブル名
      * @param methodName メソッド名 (selectById, selectByExample, insert, etc.)
      * @param args メソッド実引数配列
+     * @param dialect 適用する DB 方言 (デフォルトは SQLite / '?' プレースホルダー)
      */
-    static generate(tableName, methodName, args = []) {
+    static generate(tableName, methodName, args = [], dialect = dialect_1.defaultDialect) {
         // 1. selectById / findById
         if (/^(?:select|find)ById$/i.test(methodName)) {
             const id = args[0];
+            const ph = dialect.formatPlaceholder(1);
             return {
-                sql: `SELECT * FROM ${tableName} WHERE id = ?;`,
+                sql: `SELECT * FROM ${tableName} WHERE id = ${ph};`,
                 params: [id],
                 type: "selectOne"
             };
@@ -64,10 +67,12 @@ class AutoSqlGenerator {
             const condition = args[0] || {};
             const whereClauses = [];
             const params = [];
+            let pIdx = 1;
             for (const [key, val] of Object.entries(condition)) {
                 if (val !== undefined && val !== null) {
                     const colName = camelToSnake(key);
-                    whereClauses.push(`${colName} = ?`);
+                    const ph = dialect.formatPlaceholder(pIdx++);
+                    whereClauses.push(`${colName} = ${ph}`);
                     params.push(val);
                 }
             }
@@ -84,10 +89,11 @@ class AutoSqlGenerator {
             const cols = [];
             const placeholders = [];
             const params = [];
+            let pIdx = 1;
             for (const [key, val] of Object.entries(entity)) {
                 if (val !== undefined) {
                     cols.push(camelToSnake(key));
-                    placeholders.push("?");
+                    placeholders.push(dialect.formatPlaceholder(pIdx++));
                     params.push(val);
                 }
             }
@@ -103,18 +109,21 @@ class AutoSqlGenerator {
             const setClauses = [];
             const params = [];
             let idVal = undefined;
+            let pIdx = 1;
             for (const [key, val] of Object.entries(entity)) {
                 if (key.toLowerCase() === "id") {
                     idVal = val;
                 }
                 else if (val !== undefined) {
-                    setClauses.push(`${camelToSnake(key)} = ?`);
+                    const ph = dialect.formatPlaceholder(pIdx++);
+                    setClauses.push(`${camelToSnake(key)} = ${ph}`);
                     params.push(val);
                 }
             }
+            const idPh = dialect.formatPlaceholder(pIdx++);
             params.push(idVal);
             return {
-                sql: `UPDATE ${tableName} SET ${setClauses.join(", ")} WHERE id = ?;`,
+                sql: `UPDATE ${tableName} SET ${setClauses.join(", ")} WHERE id = ${idPh};`,
                 params,
                 type: "execute"
             };
@@ -123,8 +132,9 @@ class AutoSqlGenerator {
         if (/^delete(?:ById)?$/i.test(methodName)) {
             const arg = args[0];
             const id = typeof arg === "object" && arg !== null ? arg.id : arg;
+            const ph = dialect.formatPlaceholder(1);
             return {
-                sql: `DELETE FROM ${tableName} WHERE id = ?;`,
+                sql: `DELETE FROM ${tableName} WHERE id = ${ph};`,
                 params: [id],
                 type: "execute"
             };
@@ -159,10 +169,11 @@ async function executeAutoOrFileQuery(options) {
             sql = undefined;
         }
     }
-    // 2. SQL ファイルが無ければ規約から自動生成
+    // 2. SQL ファイルが無ければ規約から自動生成 (方言を db インスタンスから取得)
     if (!sql) {
         const tableName = inferTableName(daoName);
-        const gen = AutoSqlGenerator.generate(tableName, methodName, args);
+        const dialect = db.dialect || dialect_1.defaultDialect;
+        const gen = AutoSqlGenerator.generate(tableName, methodName, args, dialect);
         sql = gen.sql;
         params = gen.params;
         queryType = gen.type;

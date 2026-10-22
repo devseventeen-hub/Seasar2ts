@@ -3,6 +3,8 @@ import * as path from "path";
 import { initContainer } from "./container";
 import {
   MockDatabase,
+  PostgresDriver,
+  SQLiteDriver,
   setSqlBaseDir,
   applyInterceptors,
   applyPointcutAdvisors,
@@ -86,8 +88,27 @@ async function main() {
   const sqlFirstUser = await proxiedDao.find(1);
   console.log("  ✔ SQL-first Result:", sqlFirstUser.id, sqlFirstUser.name);
 
+  // 10. 第3段階 プラガブル DB Driver (PostgresDriver へのホットスワップ実証)
+  console.log("\n[8] 3rd Stage: Hot-swapping to PostgresDriver (Dialect: '$1, $2') with ZERO DAO changes...");
+  const pgDriver = new PostgresDriver();
+  pgDriver.setMemoryData("users", [
+    { id: 999, user_name: "PostgreSQL Enterprise User", email: "enterprise@postgres.org", created_at: new Date() }
+  ]);
+
+  // 新たなコンテナまたは差し替えバインディングで UserDao を再生成
+  const pgRoot = initContainer(pgDriver);
+  const pgDao = pgRoot.get<UserDao>("UserDao");
+
+  const pgUser = await pgDao.selectById(999);
+  console.log("  ✔ PostgreSQL Auto-Query Result with '$1' Placeholder:");
+  console.log("    - ID:       ", pgUser.id);
+  console.log("    - Name:     ", pgUser.name);
+  console.log("    - Email:    ", pgUser.email);
+  const pgLogs = pgDriver.getQueryLogs();
+  console.log("  ✔ Generated SQL captured by PostgresDriver:", pgLogs[0].sql, "Params:", JSON.stringify(pgLogs[0].params));
+
   console.log("\n==================================================");
-  console.log("  🎉 Seasar2ts 2nd Stage E2E Verification PASSED!");
+  console.log("  🎉 Seasar2ts 3rd Stage E2E Verification PASSED!");
   console.log("==================================================");
 }
 

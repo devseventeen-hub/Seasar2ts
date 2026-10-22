@@ -12,10 +12,12 @@ export * from "./aop/logInterceptor";
 export * from "./aop/pointcut";
 
 // S2Dao 再生
+export * from "./dao/dialect";
 export * from "./dao/database";
 export * from "./dao/loadSql";
 export * from "./dao/mapping";
 export * from "./dao/autoSql";
+export * from "./dao/drivers";
 
 // dicon
 export * from "./dicon/diconParser";

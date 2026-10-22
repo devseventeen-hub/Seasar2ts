@@ -1,4 +1,5 @@
 import { SeasarClassIR } from "../ir/seasarIR";
+import { DiconDataSourceConfig } from "@seasar2ts/core";
 /**
  * Java の型名を TypeScript の型名に変換する
  */
@@ -27,8 +28,10 @@ export declare class SeasarTsGenerator {
     generateServiceCode(ir: SeasarClassIR): string;
     /**
      * アプリケーション全体のコンテナ初期化スクリプト (container.ts) を生成する
-     * S2HierarchicalContainer (階層コンテナ) および ポイントカット AOP をサポート
+     * S2HierarchicalContainer (階層コンテナ) および プラガブル DB Driver をサポート
      */
-    generateContainerBootstrap(): string;
+    generateContainerBootstrap(options?: {
+        dbConfig?: DiconDataSourceConfig;
+    }): string;
 }
 //# sourceMappingURL=tsGenerator.d.ts.map

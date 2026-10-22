@@ -35,6 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseDiconFile = parseDiconFile;
 exports.parseDiconContent = parseDiconContent;
+exports.parseJdbcUrl = parseJdbcUrl;
+exports.extractDataSourceConfig = extractDataSourceConfig;
 const fast_xml_parser_1 = require("fast-xml-parser");
 const fs = __importStar(require("fs"));
 /**
@@ -114,6 +116,100 @@ function parseDiconContent(xmlContent, filePath = "inline.dicon") {
         filePath,
         includes,
         components
+    };
+}
+/**
+ * 文字列の前後の引用符を剥がす
+ */
+function unquote(str) {
+    if (!str)
+        return undefined;
+    const trimmed = str.trim();
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+        return trimmed.slice(1, -1);
+    }
+    return trimmed;
+}
+/**
+ * JDBC URL から接続情報をパースする
+ */
+function parseJdbcUrl(url) {
+    const result = { url };
+    if (url.startsWith("jdbc:postgresql://")) {
+        result.dbType = "postgresql";
+        // jdbc:postgresql://host:port/database
+        const match = url.match(/^jdbc:postgresql:\/\/([^:/]+)(?::(\d+))?\/(.+)$/);
+        if (match) {
+            result.host = match[1];
+            result.port = match[2] ? parseInt(match[2], 10) : 5432;
+            result.database = match[3];
+        }
+    }
+    else if (url.startsWith("jdbc:sqlite:")) {
+        result.dbType = "sqlite";
+        result.database = url.replace(/^jdbc:sqlite:/, "");
+    }
+    else if (url.startsWith("jdbc:mysql://")) {
+        result.dbType = "mysql";
+        const match = url.match(/^jdbc:mysql:\/\/([^:/]+)(?::(\d+))?\/(.+)$/);
+        if (match) {
+            result.host = match[1];
+            result.port = match[2] ? parseInt(match[2], 10) : 3306;
+            result.database = match[3];
+        }
+    }
+    else {
+        result.dbType = "unknown";
+    }
+    return result;
+}
+/**
+ * DiconDefinition から dataSource コンポーネントの設定を抽出する
+ */
+function extractDataSourceConfig(dicon) {
+    const dsComp = dicon.components.find(c => c.name?.toLowerCase() === "datasource" || c.className?.includes("DataSource"));
+    if (!dsComp)
+        return undefined;
+    let driverClassName;
+    let rawUrl;
+    let user;
+    let password;
+    for (const prop of dsComp.properties) {
+        const propName = prop.name.toLowerCase();
+        const val = unquote(prop.value);
+        if (propName === "driverclassname") {
+            driverClassName = val;
+        }
+        else if (propName === "url") {
+            rawUrl = val;
+        }
+        else if (propName === "user") {
+            user = val;
+        }
+        else if (propName === "password") {
+            password = val;
+        }
+    }
+    const parsedUrl = rawUrl ? parseJdbcUrl(rawUrl) : {};
+    let dbType = parsedUrl.dbType || "unknown";
+    if (dbType === "unknown" && driverClassName) {
+        const lowerDriver = driverClassName.toLowerCase();
+        if (lowerDriver.includes("postgres"))
+            dbType = "postgresql";
+        else if (lowerDriver.includes("sqlite"))
+            dbType = "sqlite";
+        else if (lowerDriver.includes("mysql"))
+            dbType = "mysql";
+    }
+    return {
+        dbType,
+        driverClassName,
+        url: rawUrl,
+        user,
+        password,
+        host: parsedUrl.host,
+        port: parsedUrl.port,
+        database: parsedUrl.database
     };
 }
 //# sourceMappingURL=diconParser.js.map

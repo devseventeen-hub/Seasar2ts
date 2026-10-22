@@ -6,6 +6,7 @@ import {
   executeAutoOrFileQuery
 } from "../src/dao/autoSql";
 import { MockDatabase } from "../src/dao/database";
+import { PostgresDialect } from "../src/dao/dialect";
 
 class User {
   id!: number;
@@ -72,5 +73,49 @@ describe("S2Dao Automatic SQL Generation", () => {
     expect(result).toBeInstanceOf(User);
     expect(result.id).toBe(99);
     expect(result.userName).toBe("Auto User");
+  });
+
+  it("AutoSqlGenerator should support PostgresDialect with $1, $2 placeholders", () => {
+    const pg = new PostgresDialect();
+
+    // 1. selectById
+    const byId = AutoSqlGenerator.generate("users", "selectById", [42], pg);
+    expect(byId.sql).toBe("SELECT * FROM users WHERE id = $1;");
+    expect(byId.params).toEqual([42]);
+
+    // 2. selectByExample
+    const example = AutoSqlGenerator.generate("users", "selectByExample", [{ userName: "Alice", email: "alice@example.com" }], pg);
+    expect(example.sql).toBe("SELECT * FROM users WHERE user_name = $1 AND email = $2;");
+    expect(example.params).toEqual(["Alice", "alice@example.com"]);
+
+    // 3. insert
+    const ins = AutoSqlGenerator.generate("users", "insert", [{ id: 1, userName: "Bob" }], pg);
+    expect(ins.sql).toBe("INSERT INTO users (id, user_name) VALUES ($1, $2);");
+    expect(ins.params).toEqual([1, "Bob"]);
+
+    // 4. update
+    const upd = AutoSqlGenerator.generate("users", "update", [{ id: 1, userName: "Charlie" }], pg);
+    expect(upd.sql).toBe("UPDATE users SET user_name = $1 WHERE id = $2;");
+    expect(upd.params).toEqual(["Charlie", 1]);
+  });
+
+  it("executeAutoOrFileQuery seamlessly picks up dialect from Database instance", async () => {
+    const db = new MockDatabase(new PostgresDialect());
+    db.mockData["select * from users where id = $1"] = [
+      { id: 77, user_name: "Pg User", email: "pg@example.com" }
+    ];
+
+    const result = await executeAutoOrFileQuery<User>({
+      db,
+      daoName: "UserDao",
+      methodName: "selectById",
+      args: [77],
+      entityClass: User
+    });
+
+    expect(result).toBeInstanceOf(User);
+    expect(result.id).toBe(77);
+    expect(result.userName).toBe("Pg User");
+    expect(db.queryLogs[0].sql).toBe("SELECT * FROM users WHERE id = $1;");
   });
 });

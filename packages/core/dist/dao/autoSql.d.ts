@@ -1,4 +1,5 @@
 import { Database } from "./database";
+import { DbDialect } from "./dialect";
 /**
  * キャメルケースの文字列をスネークケースに変換する
  */
@@ -14,7 +15,7 @@ export interface GeneratedSql {
     type: "selectOne" | "selectList" | "execute";
 }
 /**
- * S2Dao 規約ベースの自動 SQL ジェネレータ
+ * S2Dao 規約ベースの自動 SQL ジェネレータ (DB 方言対応)
  */
 export declare class AutoSqlGenerator {
     /**
@@ -22,8 +23,9 @@ export declare class AutoSqlGenerator {
      * @param tableName 対象テーブル名
      * @param methodName メソッド名 (selectById, selectByExample, insert, etc.)
      * @param args メソッド実引数配列
+     * @param dialect 適用する DB 方言 (デフォルトは SQLite / '?' プレースホルダー)
      */
-    static generate(tableName: string, methodName: string, args?: any[]): GeneratedSql;
+    static generate(tableName: string, methodName: string, args?: any[], dialect?: DbDialect): GeneratedSql;
 }
 export interface AutoOrFileQueryOptions<T = any> {
     db: Database;

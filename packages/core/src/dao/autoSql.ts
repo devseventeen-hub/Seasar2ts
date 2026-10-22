@@ -1,4 +1,5 @@
 import { Database } from "./database";
+import { DbDialect, defaultDialect } from "./dialect";
 import { loadSql } from "./loadSql";
 import { mapRowToBean, mapRowsToBeans, snakeToCamel } from "./mapping";
 import * as fs from "fs";
@@ -39,7 +40,7 @@ export interface GeneratedSql {
 }
 
 /**
- * S2Dao 規約ベースの自動 SQL ジェネレータ
+ * S2Dao 規約ベースの自動 SQL ジェネレータ (DB 方言対応)
  */
 export class AutoSqlGenerator {
   /**
@@ -47,13 +48,20 @@ export class AutoSqlGenerator {
    * @param tableName 対象テーブル名
    * @param methodName メソッド名 (selectById, selectByExample, insert, etc.)
    * @param args メソッド実引数配列
+   * @param dialect 適用する DB 方言 (デフォルトは SQLite / '?' プレースホルダー)
    */
-  static generate(tableName: string, methodName: string, args: any[] = []): GeneratedSql {
+  static generate(
+    tableName: string,
+    methodName: string,
+    args: any[] = [],
+    dialect: DbDialect = defaultDialect
+  ): GeneratedSql {
     // 1. selectById / findById
     if (/^(?:select|find)ById$/i.test(methodName)) {
       const id = args[0];
+      const ph = dialect.formatPlaceholder(1);
       return {
-        sql: `SELECT * FROM ${tableName} WHERE id = ?;`,
+        sql: `SELECT * FROM ${tableName} WHERE id = ${ph};`,
         params: [id],
         type: "selectOne"
       };
@@ -73,11 +81,13 @@ export class AutoSqlGenerator {
       const condition = args[0] || {};
       const whereClauses: string[] = [];
       const params: any[] = [];
+      let pIdx = 1;
 
       for (const [key, val] of Object.entries(condition)) {
         if (val !== undefined && val !== null) {
           const colName = camelToSnake(key);
-          whereClauses.push(`${colName} = ?`);
+          const ph = dialect.formatPlaceholder(pIdx++);
+          whereClauses.push(`${colName} = ${ph}`);
           params.push(val);
         }
       }
@@ -96,11 +106,12 @@ export class AutoSqlGenerator {
       const cols: string[] = [];
       const placeholders: string[] = [];
       const params: any[] = [];
+      let pIdx = 1;
 
       for (const [key, val] of Object.entries(entity)) {
         if (val !== undefined) {
           cols.push(camelToSnake(key));
-          placeholders.push("?");
+          placeholders.push(dialect.formatPlaceholder(pIdx++));
           params.push(val);
         }
       }
@@ -118,19 +129,22 @@ export class AutoSqlGenerator {
       const setClauses: string[] = [];
       const params: any[] = [];
       let idVal: any = undefined;
+      let pIdx = 1;
 
       for (const [key, val] of Object.entries(entity)) {
         if (key.toLowerCase() === "id") {
           idVal = val;
         } else if (val !== undefined) {
-          setClauses.push(`${camelToSnake(key)} = ?`);
+          const ph = dialect.formatPlaceholder(pIdx++);
+          setClauses.push(`${camelToSnake(key)} = ${ph}`);
           params.push(val);
         }
       }
 
+      const idPh = dialect.formatPlaceholder(pIdx++);
       params.push(idVal);
       return {
-        sql: `UPDATE ${tableName} SET ${setClauses.join(", ")} WHERE id = ?;`,
+        sql: `UPDATE ${tableName} SET ${setClauses.join(", ")} WHERE id = ${idPh};`,
         params,
         type: "execute"
       };
@@ -140,8 +154,9 @@ export class AutoSqlGenerator {
     if (/^delete(?:ById)?$/i.test(methodName)) {
       const arg = args[0];
       const id = typeof arg === "object" && arg !== null ? (arg as any).id : arg;
+      const ph = dialect.formatPlaceholder(1);
       return {
-        sql: `DELETE FROM ${tableName} WHERE id = ?;`,
+        sql: `DELETE FROM ${tableName} WHERE id = ${ph};`,
         params: [id],
         type: "execute"
       };
@@ -190,10 +205,11 @@ export async function executeAutoOrFileQuery<T = any>(
     }
   }
 
-  // 2. SQL ファイルが無ければ規約から自動生成
+  // 2. SQL ファイルが無ければ規約から自動生成 (方言を db インスタンスから取得)
   if (!sql) {
     const tableName = inferTableName(daoName);
-    const gen = AutoSqlGenerator.generate(tableName, methodName, args);
+    const dialect = db.dialect || defaultDialect;
+    const gen = AutoSqlGenerator.generate(tableName, methodName, args, dialect);
     sql = gen.sql;
     params = gen.params;
     queryType = gen.type;

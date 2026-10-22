@@ -1,4 +1,5 @@
 import { SeasarClassIR, SeasarFieldIR, SeasarMethodIR } from "../ir/seasarIR";
+import { DiconDataSourceConfig } from "@seasar2ts/core";
 
 /**
  * Java の型名を TypeScript の型名に変換する
@@ -255,9 +256,36 @@ export class SeasarTsGenerator {
 
   /**
    * アプリケーション全体のコンテナ初期化スクリプト (container.ts) を生成する
-   * S2HierarchicalContainer (階層コンテナ) および ポイントカット AOP をサポート
+   * S2HierarchicalContainer (階層コンテナ) および プラガブル DB Driver をサポート
    */
-  generateContainerBootstrap(): string {
+  generateContainerBootstrap(options?: { dbConfig?: DiconDataSourceConfig }): string {
+    const dbConfig = options?.dbConfig;
+    let driverImport = "MockDatabase";
+    let dbInitCode = "  const db = dbInstance || new MockDatabase();";
+
+    if (dbConfig?.dbType === "postgresql") {
+      driverImport = "PostgresDriver";
+      const host = dbConfig.host || "localhost";
+      const port = dbConfig.port || 5432;
+      const database = dbConfig.database || "app";
+      const user = dbConfig.user || "postgres";
+      const password = dbConfig.password || "";
+
+      dbInitCode = `  const db = dbInstance || new PostgresDriver({
+    host: process.env.DB_HOST || "${host}",
+    port: parseInt(process.env.DB_PORT || "${port}", 10),
+    database: process.env.DB_NAME || "${database}",
+    user: process.env.DB_USER || "${user}",
+    password: process.env.DB_PASSWORD || "${password}"
+  });`;
+    } else if (dbConfig?.dbType === "sqlite") {
+      driverImport = "SQLiteDriver";
+      const filename = dbConfig.database || "data.db";
+      dbInitCode = `  const db = dbInstance || new SQLiteDriver({
+    filename: process.env.DB_FILE || "${filename}"
+  });`;
+    }
+
     return `import "reflect-metadata";
 import * as path from "path";
 import {
@@ -268,7 +296,7 @@ import {
   PointcutAdvisor,
   TxInterceptor,
   LogInterceptor,
-  MockDatabase,
+  ${driverImport},
   Database
 } from "@seasar2ts/core";
 
@@ -276,7 +304,7 @@ export function initContainer(dbInstance?: Database): S2HierarchicalContainer {
   // 1. Root コンテナの生成 (共通リソース・DAO層)
   const rootContainer = new S2HierarchicalContainer("root");
 
-  const db = dbInstance || new MockDatabase();
+${dbInitCode}
   rootContainer.bind<Database>("Database").toConstantValue(db);
 
   // 2. 共通 Interceptor の登録

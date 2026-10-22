@@ -5,6 +5,7 @@ import * as path from "path";
 import { SeasarJavaParser } from "./parser/javaParser";
 import { SeasarTsGenerator } from "./generator/tsGenerator";
 import { SeasarClassIR } from "./ir/seasarIR";
+import { parseDiconFile, extractDataSourceConfig, DiconDataSourceConfig } from "@seasar2ts/core";
 
 const program = new Command();
 
@@ -89,8 +90,23 @@ export function runConversion(inputDir: string, outputDir: string, jarPath?: str
     console.log(`  ✔ Copied SQL: ${path.relative(resolvedOutput, destSql)}`);
   }
 
-  // 3. container.ts の生成
-  const containerCode = generator.generateContainerBootstrap();
+  // 3. dicon からの DataSource 設定抽出と container.ts の生成
+  let dbConfig: DiconDataSourceConfig | undefined;
+  for (const dFile of diconFiles) {
+    try {
+      const diconDef = parseDiconFile(dFile);
+      const ds = extractDataSourceConfig(diconDef);
+      if (ds && ds.dbType !== "unknown") {
+        dbConfig = ds;
+        console.log(`  ✔ Detected DataSource in ${path.basename(dFile)}: ${ds.dbType} (${ds.url || ds.driverClassName || ""})`);
+        break;
+      }
+    } catch {
+      // ignore parse error and continue
+    }
+  }
+
+  const containerCode = generator.generateContainerBootstrap({ dbConfig });
   fs.writeFileSync(path.join(srcDir, "container.ts"), containerCode, "utf-8");
   console.log(`  ✔ Generated: src/container.ts`);
 

@@ -8,7 +8,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace=@seasar2ts/core && npm run build --workspace=@seasar2ts/converter",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },
