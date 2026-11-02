@@ -5,7 +5,7 @@ This document describes how to use the `Seasar2ts Converter` to migrate your exi
 ## Prerequisites
 
 Before using the converter, ensure your environment meets the following requirements:
-- **Node.js**: Version 20.x or higher (LTS recommended).
+- **Node.js**: Version 22.23.4 or higher (Node 22 LTS recommended).
 - **Java Runtime**: JDK 1.8 or higher (required for the `JavaParser` component). JDK 17 or later  recommended.
 - **Source Assets**: A collection of `.java`, `.dicon`, and `.sql` files from your Seasar2 project.
 

@@ -16,8 +16,6 @@ updates:
       all-dependencies:
         patterns:
          - "*"
-    ignore:
-      - dependency-type: "all"
   - package-ecosystem: "npm"
     directory: "/packages/converter"
     schedule:
@@ -29,8 +27,6 @@ updates:
       all-dependencies:
         patterns:
          - "*"
-    ignore:
-      - dependency-type: "all"
   - package-ecosystem: "npm"
     directory: "/packages/core"
     schedule:
@@ -42,5 +38,3 @@ updates:
       all-dependencies:
         patterns:
          - "*"
-    ignore:
-      - dependency-type: "all"
