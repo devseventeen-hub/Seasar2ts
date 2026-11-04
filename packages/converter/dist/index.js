@@ -17,5 +17,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./ir/seasarIR"), exports);
 __exportStar(require("./parser/javaParser"), exports);
 __exportStar(require("./generator/tsGenerator"), exports);
+__exportStar(require("./generator/diconGenerator"), exports);
 __exportStar(require("./cli"), exports);
 //# sourceMappingURL=index.js.map

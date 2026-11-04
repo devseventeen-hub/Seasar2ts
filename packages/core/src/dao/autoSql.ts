@@ -2,6 +2,7 @@ import { Database } from "./database";
 import { DbDialect, defaultDialect } from "./dialect";
 import { loadSql } from "./loadSql";
 import { mapRowToBean, mapRowsToBeans, snakeToCamel } from "./mapping";
+import { getCurrentTxConnection } from "../aop/txInterceptor";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -188,6 +189,7 @@ export async function executeAutoOrFileQuery<T = any>(
   options: AutoOrFileQueryOptions<T>
 ): Promise<any> {
   const { db, daoName, methodName, sqlRelativePath, args, entityClass } = options;
+  const effectiveDb = getCurrentTxConnection() || db;
 
   let sql: string | undefined;
   let params: any[] = args;
@@ -208,7 +210,7 @@ export async function executeAutoOrFileQuery<T = any>(
   // 2. SQL ファイルが無ければ規約から自動生成 (方言を db インスタンスから取得)
   if (!sql) {
     const tableName = inferTableName(daoName);
-    const dialect = db.dialect || defaultDialect;
+    const dialect = effectiveDb.dialect || defaultDialect;
     const gen = AutoSqlGenerator.generate(tableName, methodName, args, dialect);
     sql = gen.sql;
     params = gen.params;
@@ -226,15 +228,15 @@ export async function executeAutoOrFileQuery<T = any>(
 
   // 3. DB 実行と Bean マッピング
   if (queryType === "execute") {
-    return await db.execute(sql, params);
+    return await effectiveDb.execute(sql, params);
   } else if (queryType === "selectList") {
-    const rows = await db.queryList(sql, params);
+    const rows = await effectiveDb.queryList(sql, params);
     if (entityClass) {
       return mapRowsToBeans(rows, entityClass);
     }
     return rows;
   } else {
-    const row = await db.queryOne(sql, params);
+    const row = await effectiveDb.queryOne(sql, params);
     if (entityClass && row) {
       return mapRowToBean(row, entityClass);
     }

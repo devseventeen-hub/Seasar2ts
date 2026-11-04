@@ -7,9 +7,10 @@ Seasar2ts aims to replicate the core features of Seasar2 in TypeScript:
 - **Convention over Configuration**: A rule-based approach to reduce boilerplate.
 - **Lightweight DI**: Powered by InversifyJS with automatic binding based on naming conventions.
 - **SQL-first DAO (S2Dao)**: Support for external `.sql` files, `Bean` mapping, and automatic query generation (e.g., `selectById`).
-- **Multi-DB Support**: A dialect-aware execution engine that automatically handles database-specific differences (e.g., SQLite vs. PostgreSQL placeholders).
-- **Declarative AOP**: Proxy-based interceptors for transaction management (`TxInterceptor`) and logging.
-- **dicon Support**: Parsing `.dicon` files for configuration and aspect application.
+- **Multi-DB Support**: A dialect-aware execution engine that automatically handles database-specific differences (e.g., SQLite, PostgreSQL, and MySQL).
+- **Connection Pooling**: Robust pooling for PostgreSQL and MySQL to ensure production-grade reliability.
+- **Declarative AOP**: Proxy-based interceptors for transaction management (`TxInterceptor`), pointcut matching (`PointcutAdvisor`), and logging.
+- **Full dicon Support**: Comprehensive mapping of `.dicon` files for configuration and aspects via build-time code generation and runtime dynamic loading.
 
 ## Components
 - **@seasar2ts/core**: The core runtime library providing DI, AOP, and DAO infrastructure.

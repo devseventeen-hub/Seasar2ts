@@ -18,9 +18,11 @@ export * from "./dao/loadSql";
 export * from "./dao/mapping";
 export * from "./dao/autoSql";
 export * from "./dao/drivers";
+export * from "./dao/pool";
 
 // dicon
 export * from "./dicon/diconParser";
+export * from "./dicon/diconLoader";
 
 // Inversify 再エクスポート (利用側の利便性のため)
 export { injectable, inject, optional, named, tagged } from "inversify";

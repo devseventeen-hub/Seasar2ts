@@ -16,4 +16,6 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./sqliteDriver"), exports);
 __exportStar(require("./postgresDriver"), exports);
+__exportStar(require("./postgresPoolDriver"), exports);
+__exportStar(require("./mysqlPoolDriver"), exports);
 //# sourceMappingURL=index.js.map

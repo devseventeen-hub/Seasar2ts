@@ -37,6 +37,7 @@ The converter will produce a structured TypeScript project in the `output_dir`:
 - `src/dao/`: Generated DAO implementations.
 - `src/entity/`: Generated POJO/Bean equivalents.
 - `src/sql/`: Re-positioned `.sql` files.
+- `src/dicon/`: Generated TypeScript container configuration files from `.dicon` (e.g., `app.dicon.ts` with `configureAppContainer`).
 - `src/container.ts`: The initialized InversifyJS container.
 
 ## Example Scenario
@@ -52,5 +53,8 @@ To convert a simple "User Management" module:
 - **Mapping Issues**: If a specific SQL query is not mapped correctly, check the `.sql` file naming convention to ensure it matches the expected `S2Dao` patterns.
 - **dicon Parsing Errors**: Ensure the `.dicon` file follows the standard Seasar2 nested container XML structure for correct hierarchy detection.
 - **Conversion Logic Errors**: If AOP or DI rules are not correctly mapped, verify the source configuration in the `.dicon` file.
-- **JDBC Configuration Analysis Errors**: Ensure that `jdbc.dicon` contains the required properties (`driverClassName`, `url`, `user`, `password`) and that the file path is correctly specified.
-- **Dialect Mismatch**: If the generated SQL uses incorrect placeholder formats (e.g., `?` instead of `$1, $2...` for PostgreSQL), verify that the correct `DbDialect` is being identified from the JDBC URL or configuration.
+- **JDBC Configuration Analysis Errors**: Ensure that `jdbc.dicon` contains the required properties (`driverClassName`, `url`, `user`, `password`) and optional DBCP pool settings (`maxActive`, `minIdle`, `maxWait`, `maxIdle`), and that the file path is correctly specified.
+- **Dialect Mismatch**: If the generated SQL uses incorrect placeholder formats (e.g., `?` for SQLite/MySQL vs. `$1, $2...` for PostgreSQL), verify that the correct `DbDialect` is being identified from the JDBC URL or configuration.
+- **Lifecycle Method Errors**: If `<initMethod>` or `<destroyMethod>` are not executed correctly, verify that the method names in the `.dicon` file match the class definitions and that the component scope is correctly configured.
+- **Metadata Mapping Issues**: If `<meta>` tags are not correctly reflected in the generated code, ensure the tag names and attribute values in the `.dicon` file are accurate.
+- **Connection Pool Configuration Errors**: If using PostgreSQL or MySQL connection pooling, ensure DBCP properties (such as `maxActive`, `minIdle`, `maxWait`) in `jdbc.dicon` or pool configuration in TypeScript are within valid ranges.

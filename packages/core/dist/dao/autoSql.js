@@ -7,6 +7,7 @@ exports.executeAutoOrFileQuery = executeAutoOrFileQuery;
 const dialect_1 = require("./dialect");
 const loadSql_1 = require("./loadSql");
 const mapping_1 = require("./mapping");
+const txInterceptor_1 = require("../aop/txInterceptor");
 /**
  * キャメルケースの文字列をスネークケースに変換する
  */
@@ -154,6 +155,7 @@ exports.AutoSqlGenerator = AutoSqlGenerator;
  */
 async function executeAutoOrFileQuery(options) {
     const { db, daoName, methodName, sqlRelativePath, args, entityClass } = options;
+    const effectiveDb = (0, txInterceptor_1.getCurrentTxConnection)() || db;
     let sql;
     let params = args;
     let queryType = "selectOne";
@@ -172,7 +174,7 @@ async function executeAutoOrFileQuery(options) {
     // 2. SQL ファイルが無ければ規約から自動生成 (方言を db インスタンスから取得)
     if (!sql) {
         const tableName = inferTableName(daoName);
-        const dialect = db.dialect || dialect_1.defaultDialect;
+        const dialect = effectiveDb.dialect || dialect_1.defaultDialect;
         const gen = AutoSqlGenerator.generate(tableName, methodName, args, dialect);
         sql = gen.sql;
         params = gen.params;
@@ -192,17 +194,17 @@ async function executeAutoOrFileQuery(options) {
     }
     // 3. DB 実行と Bean マッピング
     if (queryType === "execute") {
-        return await db.execute(sql, params);
+        return await effectiveDb.execute(sql, params);
     }
     else if (queryType === "selectList") {
-        const rows = await db.queryList(sql, params);
+        const rows = await effectiveDb.queryList(sql, params);
         if (entityClass) {
             return (0, mapping_1.mapRowsToBeans)(rows, entityClass);
         }
         return rows;
     }
     else {
-        const row = await db.queryOne(sql, params);
+        const row = await effectiveDb.queryOne(sql, params);
         if (entityClass && row) {
             return (0, mapping_1.mapRowToBean)(row, entityClass);
         }

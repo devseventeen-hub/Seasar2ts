@@ -27,17 +27,25 @@ Provides the runtime layer for S2Dao-style SQL execution and bean mapping.
 - **Location**: `packages/core/src/dao/`
 
 ### 4. Multi-Database Support
-Provides a dialect-aware execution engine to support multiple database types (e.g., SQLite, PostgreSQL).
+Provides a dialect-aware execution engine to support multiple database types (e.g., SQLite, PostgreSQL, MySQL).
 - **DB Abstraction**: Decouples business logic from database-specific details using `DbConnection` and `DbDialect` interfaces.
 - **Dialect-Aware Execution**: Automatically handles database-specific differences, such as placeholder formats (`?` vs `$1, $2...`) and identifier quoting, via the `DbDialect` layer.
 - **Location**: `packages/core/src/dao/drivers/`
 
 ### 5. Dicon Parsing & Bootstrap
 Provides utilities to parse `.dicon` files, enabling the seamless migration of Seasar2 configuration into the TypeScript environment.
-- **Nested Container Mapping**: Supports mapping the hierarchical container structures defined in `.dicon` files.
-- **DataSource Extraction**: Automatically parses `jdbc.dicon` to extract critical connection parameters including `driverClassName`, `url`, `user`, and `password`.
+- **Full Tag Mapping**: Supports a comprehensive range of dicon tags including `<components>`, `<include>`, `<component>` (with `instance` scope), `<arg>`, `<property>`, `<aspect>`, `<initMethod>`, `<destroyMethod>`, and `<meta>`.
+- **Dual Implementation Modes**: Supports both build-time code generation (via the `converter` module's `DiconTsGenerator`) and runtime dynamic loading (via `DiconLoader`) to build the `S2HierarchicalContainer` tree directly from XML.
+- **DataSource Extraction**: Automatically parses `jdbc.dicon` to extract critical connection parameters (`driverClassName`, `url`, `user`, `password`) and DBCP pool settings (`maxActive`, `minIdle`, `maxWait`, `maxIdle`).
 - **Automatic Driver Initialization**: Bridges the gap between Seasar2 configuration and the TypeScript runtime by automatically generating the appropriate Driver initialization code based on the parsed JDBC settings.
 - **Location**: `packages/core/src/dicon/`
+
+### 6. DB Connection Pooling
+Provides a robust connection pooling layer to support high-concurrency production environments.
+- **DbConnectionPool Abstraction**: A standardized interface for managing connection lifecycles, providing `acquire()`, `release()`, and `withConnection()` methods.
+- **Native Pool Drivers**: Includes high-performance implementations for PostgreSQL (`PostgresPoolDriver` using `pg.Pool`) and MySQL (`MySQLPoolDriver` using `mysql2/promise`).
+- **Transaction Integration**: Seamlessly integrates with `TxInterceptor` to ensure connections are leased during transactions and reliably returned to the pool, preventing connection leaks.
+- **Location**: `packages/core/src/dao/pool.ts` and `packages/core/src/dao/drivers/`
 
 ## Architecture Overview
 
@@ -46,5 +54,6 @@ The core module acts as the engine that powers the generated code. While the `co
 - **aop**: Handles the execution flow of intercepted methods, including transaction management.
 - **container**: Manages the lifecycle and injection of components, supporting hierarchical structures.
 - **dao**: Handles the translation between raw SQL results and typed objects.
-- **Multi-Database Support**: Utilizing a dialect-aware execution engine to support multiple database types (SQLite, PostgreSQL, etc.).
+- **Multi-Database Support**: Utilizing a dialect-aware execution engine to support multiple database types (SQLite, PostgreSQL, MySQL).
 - **dicon**: Bridges the gap between Seasar2 configuration and TypeScript by automatically mapping JDBC settings to the runtime environment.
+- **pool**: Manages database connection pooling and provides native drivers for PostgreSQL and MySQL.
