@@ -11,7 +11,7 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "direct"
-    open_pull_requests_limit: 3
+    open-pull-requests-limit: 3
     groups:
       all-dependencies:
         patterns:
@@ -22,7 +22,7 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "direct"
-    open_pull_requests_limit: 3
+    open-pull-requests-limit: 3
     groups:
       all-dependencies:
         patterns:
@@ -33,7 +33,7 @@ updates:
       interval: "weekly"
     allow:
       - dependency-type: "direct"
-    open_pull_requests_limit: 3
+    open-pull-requests-limit: 3
     groups:
       all-dependencies:
         patterns:

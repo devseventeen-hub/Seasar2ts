@@ -24,7 +24,10 @@
     "aop"
   ],
   "overrides": {
-    "tinypool": "^2.1.2"
+    "tinypool": "^2.1.2",
+    "@ts-morph/common": {
+      "minimatch": "^11.0.1"
+    }
   },
   "author": "",
   "license": "Apache-2.0"
