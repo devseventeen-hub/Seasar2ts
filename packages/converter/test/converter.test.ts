@@ -139,4 +139,55 @@ describe("Seasar2ts Converter (Java -> TS)", () => {
     expect(bootstrap).toContain("new SQLiteDriver({");
     expect(bootstrap).toContain("sample.db");
   });
+
+  it("should extract JavaDoc comments, httpMethod, and routePath for Action and Form", () => {
+    const javaSource = `
+    package com.example.action;
+
+    /**
+     * ユーザー管理画面のアクションコントローラー
+     */
+    public class UserAction {
+        /** ユーザー入力フォーム */
+        public UserForm userForm;
+
+        /**
+         * ユーザー一覧画面を表示する
+         * @return 遷移先View
+         */
+        public String index() {
+            return "userList.jsp";
+        }
+
+        /**
+         * ユーザー登録を実行する
+         * @param form 入力データ
+         * @return リダイレクト先
+         */
+        public String submit(UserForm form) {
+            return "user/index?redirect=true";
+        }
+    }
+    `;
+
+    const ir = parser.parseSource(javaSource, "UserAction.java");
+    expect(ir.className).toBe("UserAction");
+    expect(ir.layer).toBe("action");
+    expect(ir.docComment).toBe("ユーザー管理画面のアクションコントローラー");
+
+    expect(ir.fields.length).toBe(1);
+    expect(ir.fields[0].name).toBe("userForm");
+    expect(ir.fields[0].docComment).toBe("ユーザー入力フォーム");
+
+    expect(ir.methods.length).toBe(2);
+    expect(ir.methods[0].name).toBe("index");
+    expect(ir.methods[0].httpMethod).toBe("GET");
+    expect(ir.methods[0].routePath).toBe("/user");
+    expect(ir.methods[0].docComment).toContain("ユーザー一覧画面を表示する");
+
+    expect(ir.methods[1].name).toBe("submit");
+    expect(ir.methods[1].httpMethod).toBe("POST");
+    expect(ir.methods[1].routePath).toBe("/user/submit");
+    expect(ir.methods[1].docComment).toContain("ユーザー登録を実行する");
+  });
 });

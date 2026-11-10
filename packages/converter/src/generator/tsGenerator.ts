@@ -67,7 +67,11 @@ export function isBuiltinType(typeName: string): boolean {
 /**
  * SeasarClassIR から TypeScript コードを生成するジェネレータ
  */
+import { ActionTsGenerator } from "./actionGenerator";
+
 export class SeasarTsGenerator {
+  private actionGenerator = new ActionTsGenerator();
+
   /**
    * クラスIRの種類に応じて適切な TS コードを生成する
    */
@@ -77,8 +81,12 @@ export class SeasarTsGenerator {
         return this.generateEntityCode(ir);
       case "dao":
         return this.generateDaoCode(ir);
-      case "logic":
       case "action":
+        return this.actionGenerator.generateActionCode(ir);
+      case "form":
+      case "dto":
+        return this.actionGenerator.generateFormCode(ir);
+      case "logic":
       default:
         return this.generateServiceCode(ir);
     }

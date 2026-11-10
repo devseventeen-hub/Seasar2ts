@@ -31,14 +31,16 @@ npx @seasar2ts/converter --input ./source_dir --output ./output_dir
 ```
 
 ### 3. Review Generated Code
-The converter will produce a structured TypeScript project in the `output_dir`:
-- `src/action/`: Generated Action classes.
+The converter will produce a structured project in the `output_dir`:
+- `src/action/`: Generated Action and Form classes (`*Action.ts`, `*Form.ts`).
 - `src/logic/`: Generated Logic classes.
 - `src/dao/`: Generated DAO implementations.
 - `src/entity/`: Generated POJO/Bean equivalents.
-- `src/sql/`: Re-positioned `.sql` files.
 - `src/dicon/`: Generated TypeScript container configuration files from `.dicon` (e.g., `app.dicon.ts` with `configureAppContainer`).
+- `src/sql/`: Re-positioned `.sql` files.
 - `src/container.ts`: The initialized InversifyJS container.
+- `docs/api-catalog.md`: Standard API & Type Catalog document (Markdown) detailing all Action endpoints, typed parameters, models, and JavaDoc descriptions for human inspection and AI UI regeneration.
+- `docs/api-spec.json`: OpenAPI 3.0 / JSON Schema specification file for API tooling, Swagger, and frontend SDK generation.
 
 ## Example Scenario
 

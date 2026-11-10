@@ -5,10 +5,8 @@ import { DiconDataSourceConfig } from "@seasar2ts/core";
  */
 export declare function mapJavaTypeToTs(javaType: string): string;
 export declare function isBuiltinType(typeName: string): boolean;
-/**
- * SeasarClassIR から TypeScript コードを生成するジェネレータ
- */
 export declare class SeasarTsGenerator {
+    private actionGenerator;
     /**
      * クラスIRの種類に応じて適切な TS コードを生成する
      */

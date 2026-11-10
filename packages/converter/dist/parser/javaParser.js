@@ -34,9 +34,25 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SeasarJavaParser = void 0;
+exports.cleanDocComment = cleanDocComment;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const child_process_1 = require("child_process");
+/**
+ * JavaDoc コメント文字列（/** ... *\/）をクリーンなテキストに整形する
+ */
+function cleanDocComment(raw) {
+    if (!raw)
+        return undefined;
+    const cleaned = raw
+        .replace(/^\/\*\*|\*\/$/g, "")
+        .split("\n")
+        .map(line => line.replace(/^\s*\*\s?/, "").trim())
+        .filter((line, i, arr) => !(i === 0 && line === "") && !(i === arr.length - 1 && line === ""))
+        .join("\n")
+        .trim();
+    return cleaned || undefined;
+}
 /**
  * Java ソースコードから SeasarClassIR を抽出するパーサー
  * JavaParser CLI (JAR) が指定/存在する場合はそれを実行し、
@@ -87,7 +103,10 @@ class SeasarJavaParser {
         const className = classMatch ? classMatch[2] : path.basename(filePath, ".java");
         // 3. レイヤー判定 (命名規約 & パッケージ)
         const layer = this.determineLayer(className, packageName);
-        // 4. クラスアノテーション
+        // 4. クラスレベル JavaDoc コメントの抽出
+        const classDocMatch = source.match(/(\/\*\*([^*]|\*(?!\/))*?\*\/)\s*(?:@[a-zA-Z0-9_]+(?:\([^)]*\))?\s*)*(?:public\s+|abstract\s+|final\s+)*(?:class|interface)\s+[a-zA-Z0-9_]+/);
+        const docComment = classDocMatch ? cleanDocComment(classDocMatch[1]) : undefined;
+        // 5. クラスアノテーション
         const annotations = [];
         const classAnnotationMatches = source.match(/@([a-zA-Z0-9_]+)(?:\([^)]*\))?\s*(?:public|class|interface)/g);
         if (classAnnotationMatches) {
@@ -96,10 +115,10 @@ class SeasarJavaParser {
                 annotations.push(name);
             }
         }
-        // 5. フィールド抽出
+        // 6. フィールド抽出
         const fields = this.extractFields(source);
-        // 6. メソッド抽出
-        const methods = this.extractMethods(source);
+        // 7. メソッド抽出
+        const methods = this.extractMethods(source, className, layer);
         return {
             packageName,
             className,
@@ -108,6 +127,7 @@ class SeasarJavaParser {
             annotations,
             fields,
             methods,
+            docComment,
             sourceFilePath: filePath
         };
     }
@@ -116,51 +136,55 @@ class SeasarJavaParser {
         const lowerPkg = packageName.toLowerCase();
         if (lowerName.endsWith("action") || lowerPkg.includes(".action"))
             return "action";
+        if (lowerName.endsWith("form") || lowerPkg.includes(".form"))
+            return "form";
+        if (lowerName.endsWith("dto") || lowerPkg.includes(".dto"))
+            return "dto";
         if (lowerName.endsWith("logic") || lowerName.endsWith("service") || lowerPkg.includes(".logic") || lowerPkg.includes(".service"))
             return "logic";
         if (lowerName.endsWith("dao") || lowerPkg.includes(".dao"))
             return "dao";
-        if (lowerPkg.includes(".entity") || lowerPkg.includes(".dto") || lowerPkg.includes(".bean"))
+        if (lowerPkg.includes(".entity") || lowerPkg.includes(".bean"))
             return "entity";
         return "other";
     }
     extractFields(source) {
         const fields = [];
-        // コメント除去
-        const cleaned = source.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, "");
-        // フィールド宣言をマッチ (例: @Binding private UserDao userDao; や public int id;)
-        const fieldRegex = /(?:(@[a-zA-Z0-9_]+(?:\([^)]*\))?\s+)*)(public|protected|private)\s+([a-zA-Z0-9_<>,?\s]+)\s+([a-zA-Z0-9_]+)\s*;/g;
+        // フィールド宣言をマッチ (JavaDoc, アノテーション, 修飾子, 型, 名前)
+        const fieldRegex = /(?:(\/\*\*([^*]|\*(?!\/))*?\*\/)\s*)?(?:((?:@[a-zA-Z0-9_]+(?:\([^)]*\))?\s*)+)\s*)?(public|protected|private)\s+([a-zA-Z0-9_<>,?\s]+)\s+([a-zA-Z0-9_]+)\s*;/g;
         let match;
-        while ((match = fieldRegex.exec(cleaned)) !== null) {
-            const annotationPart = match[1] || "";
-            const visibility = match[2];
-            const type = match[3].trim();
-            const name = match[4].trim();
+        while ((match = fieldRegex.exec(source)) !== null) {
+            const rawDoc = match[1];
+            const annotationPart = match[3] || "";
+            const visibility = match[4];
+            const type = match[5].trim();
+            const name = match[6].trim();
             const isBinding = annotationPart.includes("@Binding") || annotationPart.includes("@Inject") || annotationPart.includes("@Autowired");
+            const docComment = cleanDocComment(rawDoc);
             fields.push({
                 name,
                 type,
                 visibility,
-                isBinding
+                isBinding,
+                docComment
             });
         }
         return fields;
     }
-    extractMethods(source) {
+    extractMethods(source, className, layer) {
         const methods = [];
-        // メソッド宣言をマッチ (Interface メソッド または Class メソッド)
-        // 例: @Sql("find.sql") User find(int id);
-        // 例: public User find(int id) { ... }
-        const methodRegex = /(?:((?:@[a-zA-Z0-9_]+(?:\([^)]*\))?\s*)+)\s*)?(?:public\s+|protected\s+|private\s+)?([a-zA-Z0-9_<>,?\s]+)\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)\s*(?:throws\s+[^{;]+)?(?:\{|;)/g;
+        // メソッド宣言をマッチ (JavaDoc, アノテーション, 修飾子, 戻り値型, 名前, 引数)
+        const methodRegex = /(?:(\/\*\*([^*]|\*(?!\/))*?\*\/)\s*)?(?:((?:@[a-zA-Z0-9_]+(?:\([^)]*\))?\s*)+)\s*)?(?:public\s+|protected\s+|private\s+)?([a-zA-Z0-9_<>,?\s]+)\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)\s*(?:throws\s+[^{;]+)?(?:\{|;)/g;
         let match;
         while ((match = methodRegex.exec(source)) !== null) {
-            const annotationPart = match[1] || "";
-            let returnType = match[2].trim()
+            const rawDoc = match[1];
+            const annotationPart = match[3] || "";
+            let returnType = match[4].trim()
                 .replace(/^(?:public|protected|private|static|final|abstract|synchronized)\s+/g, "")
                 .trim();
-            const name = match[3].trim();
-            const paramStr = match[4].trim();
-            // コンストラクタや無効なキーワードを除外
+            const name = match[5].trim();
+            const paramStr = match[6].trim();
+            // コンストラクタや無効な構文を除外
             if (returnType.includes("class") || returnType.includes("interface") || name === "if" || name === "while" || name === "for") {
                 continue;
             }
@@ -174,6 +198,7 @@ class SeasarJavaParser {
             const isTransactional = annotationPart.includes("@Transactional") || annotationPart.includes("@Aspect");
             // アノテーションリスト
             const annotations = (annotationPart.match(/@([a-zA-Z0-9_]+)/g) || []).map(a => a.substring(1));
+            const docComment = cleanDocComment(rawDoc);
             // パラメータ解析
             const parameters = [];
             if (paramStr.length > 0) {
@@ -188,13 +213,33 @@ class SeasarJavaParser {
                     }
                 }
             }
+            // Action レイヤーの場合のエンドポイントおよび HTTP メソッドの推定
+            let httpMethod;
+            let routePath;
+            if (layer === "action") {
+                const baseName = className.replace(/(?:Action|Controller)$/, "").replace(/^[A-Z]/, c => c.toLowerCase());
+                routePath = name === "index" ? `/${baseName}` : `/${baseName}/${name}`;
+                const lower = name.toLowerCase();
+                if (/^(?:submit|insert|update|delete|save|post)/.test(lower)) {
+                    httpMethod = "POST";
+                }
+                else if (/^(?:index|show|find|get|list|display)/.test(lower)) {
+                    httpMethod = "GET";
+                }
+                else {
+                    httpMethod = "ALL";
+                }
+            }
             methods.push({
                 name,
                 returnType,
                 parameters,
                 sqlFile,
                 isTransactional,
-                annotations
+                annotations,
+                docComment,
+                httpMethod,
+                routePath
             });
         }
         return methods;

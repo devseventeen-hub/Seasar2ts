@@ -47,6 +47,13 @@ Provides a robust connection pooling layer to support high-concurrency productio
 - **Transaction Integration**: Seamlessly integrates with `TxInterceptor` to ensure connections are leased during transactions and reliably returned to the pool, preventing connection leaks.
 - **Location**: `packages/core/src/dao/pool.ts` and `packages/core/src/dao/drivers/`
 
+### 7. Web & Action Routing
+Provides convention-based Action execution and web-framework-agnostic HTTP routing.
+- **ActionResult**: Unified result abstraction for views (`view("userList.jsp")`), redirects (`redirect("/user/index")`), and API data (`json(data)`).
+- **S2HttpRouter**: Automatically maps SA-Struts conventions (`UserAction#index` $\rightarrow$ `/user`, `UserAction#submit` $\rightarrow$ `/user/submit`) and binds query/body parameters to Action and Form fields.
+- **Universal HTTP Adapter**: `createHttpHandler(router)` produces standard Node.js request listeners that plug effortlessly into Express, Fastify, Next.js route handlers, or `http.createServer`.
+- **Location**: `packages/core/src/web/`
+
 ## Architecture Overview
 
 The core module acts as the engine that powers the generated code. While the `converter` handles the transformation of Java source code, `core` provides the runtime capabilities:
@@ -57,3 +64,4 @@ The core module acts as the engine that powers the generated code. While the `co
 - **Multi-Database Support**: Utilizing a dialect-aware execution engine to support multiple database types (SQLite, PostgreSQL, MySQL).
 - **dicon**: Bridges the gap between Seasar2 configuration and TypeScript by automatically mapping JDBC settings to the runtime environment.
 - **pool**: Manages database connection pooling and provides native drivers for PostgreSQL and MySQL.
+- **web**: Dispatches HTTP requests to Actions, handles parameter binding, and normalizes ActionResults.

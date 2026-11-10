@@ -24,6 +24,9 @@ export * from "./dao/pool";
 export * from "./dicon/diconParser";
 export * from "./dicon/diconLoader";
 
+// Web & Action
+export * from "./web";
+
 // Inversify 再エクスポート (利用側の利便性のため)
 export { injectable, inject, optional, named, tagged } from "inversify";
 export { Container } from "inversify";

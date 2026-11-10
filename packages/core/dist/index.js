@@ -36,6 +36,8 @@ __exportStar(require("./dao/pool"), exports);
 // dicon
 __exportStar(require("./dicon/diconParser"), exports);
 __exportStar(require("./dicon/diconLoader"), exports);
+// Web & Action
+__exportStar(require("./web"), exports);
 // Inversify 再エクスポート (利用側の利便性のため)
 var inversify_1 = require("inversify");
 Object.defineProperty(exports, "injectable", { enumerable: true, get: function () { return inversify_1.injectable; } });

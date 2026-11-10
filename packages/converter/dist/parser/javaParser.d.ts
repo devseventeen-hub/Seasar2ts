@@ -3,6 +3,10 @@ export interface ParseOptions {
     jarPath?: string;
 }
 /**
+ * JavaDoc コメント文字列（/** ... *\/）をクリーンなテキストに整形する
+ */
+export declare function cleanDocComment(raw?: string): string | undefined;
+/**
  * Java ソースコードから SeasarClassIR を抽出するパーサー
  * JavaParser CLI (JAR) が指定/存在する場合はそれを実行し、
  * なければ標準の精密正規表現/トークンアナライザーで構文解析を行う

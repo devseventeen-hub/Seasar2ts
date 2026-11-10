@@ -26,5 +26,13 @@ Specifically, Seasar2's features have been optimized and adapted for TypeScript 
 - Seasar2: Uses DBCP (Database Connection Pool) via `jdbc.dicon` configurations.
 - Seasar2ts: Introduces a `DbConnectionPool` abstraction with drivers for PostgreSQL (`PostgresPoolDriver`) and MySQL (`MySQLPoolDriver`). It automatically extracts DBCP pool configurations (`maxActive`, `minIdle`, `maxWait`, `maxIdle`) from `jdbc.dicon`, and coordinates with `TxInterceptor` to lease connections during transactions and guarantee return to the pool upon commit/rollback to prevent connection leaks.
 
+## 7. Action & Web Layer
+- Seasar2: SA-Struts / Teeda Controllers returning view paths or forwards/redirects tightly coupled to JSP.
+- Seasar2ts: Recreates Action execution through `ActionResult` (`view`, `redirect`, `json`) and a web-framework-agnostic router (`S2HttpRouter`, `createHttpHandler`) that easily plugs into Express, Fastify, Next.js route handlers, or Node.js native `http.createServer`.
+
+## 8. Frontend Regeneration Support & Deterministic API Catalog
+- Seasar2: JavaDoc documented technical Java signatures but lacked actionable API/screen contracts.
+- Seasar2ts: Leaves legacy JSP parsing to dedicated frontend projects to maintain a focused, robust backend engine. In its place, the converter generates deterministic API/Type contracts (`docs/api-catalog.md` and `docs/api-spec.json`) and TSDoc comments, providing unambiguous specifications for AI agents (LLMs) and developers to rebuild modern frontends (React, Vue, Next.js).
+
 Summary
 Seasar2ts is not merely a port; it is designed as a framework that **"reconstructs the spirit of Seasar2 (lightweight, automation, and SQL-first) within the TypeScript ecosystem."**

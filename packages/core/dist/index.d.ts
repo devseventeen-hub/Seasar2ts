@@ -15,6 +15,7 @@ export * from "./dao/drivers";
 export * from "./dao/pool";
 export * from "./dicon/diconParser";
 export * from "./dicon/diconLoader";
+export * from "./web";
 export { injectable, inject, optional, named, tagged } from "inversify";
 export { Container } from "inversify";
 //# sourceMappingURL=index.d.ts.map

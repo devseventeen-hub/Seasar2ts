@@ -11,6 +11,8 @@ Seasar2ts aims to replicate the core features of Seasar2 in TypeScript:
 - **Connection Pooling**: Robust pooling for PostgreSQL and MySQL to ensure production-grade reliability.
 - **Declarative AOP**: Proxy-based interceptors for transaction management (`TxInterceptor`), pointcut matching (`PointcutAdvisor`), and logging.
 - **Full dicon Support**: Comprehensive mapping of `.dicon` files for configuration and aspects via build-time code generation and runtime dynamic loading.
+- **Action & Web Routing**: Convention-based Action execution and web-framework-agnostic HTTP routing (`S2HttpRouter`, `ActionResult`).
+- **API & Type Catalog Generation**: Automated extraction of deterministic API/Type specifications (`docs/api-catalog.md`, `docs/api-spec.json`) to power modern frontend regeneration and AI-assisted tooling.
 
 ## Components
 - **@seasar2ts/core**: The core runtime library providing DI, AOP, and DAO infrastructure.
