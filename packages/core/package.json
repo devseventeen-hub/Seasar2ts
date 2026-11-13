@@ -15,7 +15,7 @@
   "dependencies": {
     "inversify": "^6.0.2",
     "reflect-metadata": "^0.2.2",
-    "fast-xml-parser": "^5.7.0"
+    "fast-xml-parser": "^5.12.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
